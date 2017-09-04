@@ -8,33 +8,34 @@ import logging
 from urllib import request, parse
 from enum import Enum
 
-INTERNET_ACCESS_PAGE_NAME = 'internet.iitb.ac.in'
-INTERNET_ACCESS_PAGE_IP = '10.201.250.201'
+INTERNET_ACCESS_PAGE = 'internet.iitb.ac.in'
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 class ExitCode(Enum):
-    SUCCESS = 0
-    BAD_INVOCATION = 1
-    CONNECTION_FAILED = 2
-    BAD_RESPONSE = 3
-    FAILURE = 4
-
-def check_dns():
-    try:
-        ip_addr = socket.gethostbyname(INTERNET_ACCESS_PAGE_NAME)
-        return True
-    except socket.gaierror:
-        logging.warning('DNS lookup for %s failed. Using preset IP %s' %
-                            (INTERNET_ACCESS_PAGE_NAME, INTERNET_ACCESS_PAGE_IP))
-        return False
+    SUCCESS            = 0
+    BAD_INVOCATION     = 1
+    CONNECTION_FAILED  = 2
+    BAD_RESPONSE       = 3
+    FAILURE            = 4
 
 def get_internet_access_page():
-    internet_access_page = INTERNET_ACCESS_PAGE_NAME
-    if not check_dns():
-        internet_access_page = INTERNET_ACCESS_PAGE_IP
-    return 'https://' + internet_access_page
+    return 'https://' + INTERNET_ACCESS_PAGE
 
 def is_logout_page(url):
     return True if url.split('/')[-1] == 'logout.php' else False
+
+def get_ip(page_contents):
+    '''
+    Return: current IP from logout.php page contents as a string
+            Throws ValueError if no IP found
+    '''
+    ip = page_contents.split('checked="checked"')[0].split('value=')[-1]
+    ip = ip.strip(' "')
+    try:
+        socket.inet_aton(ip)
+    except OSError:
+        raise ValueError('Expected IP, got %s' % (ip))
+    return ip
 
 def do_logout():
     internet_access_page = get_internet_access_page()
@@ -46,31 +47,31 @@ def do_logout():
         print('Logout failed.')
         exit_code = ExitCode.CONNECTION_FAILED.value
     elif not is_logout_page(response.geturl()):
-        logging.warning('Redirected to %s' % (response.geturl()))
+        logging.info('Redirected to %s' % (response.geturl()))
         print('Not logged in.')
         exit_code =  ExitCode.SUCCESS.value
     else:
         try:
             logout_page = internet_access_page + '/logout.php'
             response_text = response.read().decode()
-            ip = response_text.split('checked="checked"')[0].split('value=')[-1]
-            ip = ip.strip(' "')
-            socket.inet_aton(ip)
+            ip = get_ip(response_text)
 
             data = {'ip': ip, 'button': 'Logout'}
             data = parse.urlencode(data).encode()
             logout_response = request.urlopen(logout_page, data=data)
+
             if logout_response.status != 200:
                 logging.error('Connection to %s failed' % (logout_page))
                 print('Logout failed.')
                 exit_code = ExitCode.CONNECTION_FAILED.value
             else:
                 print('Successfully logged out.')
-        except (OSError, ValueError) as error:
+        except ValueError as error:
             logging.error('Malformed data recieved from %s' % (logout_page))
-            logging.error('Error message: %s' % (str(error)))
+            logging.info('Error message: %s' % (str(error)))
             print('Logout failed.')
             exit_code = ExitCode.BAD_RESPONSE.value
+
     return exit_code
 
 def do_login(username):
@@ -81,18 +82,19 @@ def do_login(username):
     data = {'uname': username, 'passwd': password}
     data = parse.urlencode(data).encode()
     response = request.urlopen(login_page, data=data)
+
     if response.status != 200:
         logging.error('Connection to %s failed' % (login_page))
         print('Login failed.')
         exit_code = ExitCode.CONNECTION_FAILED.value
     elif is_logout_page(response.geturl()):
-        print('% already logged in.')
+        print('Already logged in.')
     else:
         response = request.urlopen(login_page)
         if is_logout_page(response.geturl()):
-            print('%s logged in' % (username))
+            print('%s logged in.' % (username))
         else:
-            logging.warning('Redirected to %s' % (response.geturl()))
+            logging.info('Redirected to %s' % (response.geturl()))
             print('Login failed.')
             exit_code = ExitCode.FAILURE.value
 
