@@ -39,17 +39,17 @@ def get_ip(page_contents):
 
 def do_logout():
     internet_access_page = get_internet_access_page()
-    exit_code = ExitCode.SUCCESS.value
+    exit_code = ExitCode.SUCCESS
     response = request.urlopen(internet_access_page)
 
     if response.status != 200:
         logging.error('Connection to %s failed' % (internet_access_page))
         print('Logout failed.')
-        exit_code = ExitCode.CONNECTION_FAILED.value
+        exit_code = ExitCode.CONNECTION_FAILED
     elif not is_logout_page(response.geturl()):
         logging.info('Redirected to %s' % (response.geturl()))
         print('Not logged in.')
-        exit_code =  ExitCode.SUCCESS.value
+        exit_code =  ExitCode.SUCCESS
     else:
         try:
             logout_page = internet_access_page + '/logout.php'
@@ -63,20 +63,20 @@ def do_logout():
             if logout_response.status != 200:
                 logging.error('Connection to %s failed' % (logout_page))
                 print('Logout failed.')
-                exit_code = ExitCode.CONNECTION_FAILED.value
+                exit_code = ExitCode.CONNECTION_FAILED
             else:
                 print('Successfully logged out.')
         except ValueError as error:
             logging.error('Malformed data recieved from %s' % (logout_page))
             logging.info('Error message: %s' % (str(error)))
             print('Logout failed.')
-            exit_code = ExitCode.BAD_RESPONSE.value
+            exit_code = ExitCode.BAD_RESPONSE
 
     return exit_code
 
 def do_login(username):
     login_page = get_internet_access_page() + '/index.php'
-    exit_code = ExitCode.SUCCESS.value
+    exit_code = ExitCode.SUCCESS
 
     password = getpass.getpass(prompt="Enter password: ")
     data = {'uname': username, 'passwd': password}
@@ -86,7 +86,7 @@ def do_login(username):
     if response.status != 200:
         logging.error('Connection to %s failed' % (login_page))
         print('Login failed.')
-        exit_code = ExitCode.CONNECTION_FAILED.value
+        exit_code = ExitCode.CONNECTION_FAILED
     elif is_logout_page(response.geturl()):
         print('Already logged in.')
     else:
@@ -96,11 +96,12 @@ def do_login(username):
         else:
             logging.info('Redirected to %s' % (response.geturl()))
             print('Login failed.')
-            exit_code = ExitCode.FAILURE.value
+            exit_code = ExitCode.FAILURE
 
     return exit_code
 
 if __name__ == '__main__':
+    exit_code = ExitCode.BAD_INVOCATION
     parser = argparse.ArgumentParser(description='''
                                         Tool to login and logout of IIT Bombay
                                         internet access page.''')
@@ -110,13 +111,15 @@ if __name__ == '__main__':
     options_group.add_argument('--login', metavar='USERNAME', help='''
                             login to IIT Bombay internet access page as
                             USERNAME''')
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        parser.exit(status=exit_code.value)
 
-    exit_code = ExitCode.BAD_INVOCATION.value
     if args.logout:
         exit_code = do_logout()
     elif args.login is not None:
         exit_code = do_login(args.login)
     else:
         parser.print_help()
-    sys.exit(exit_code)
+    sys.exit(exit_code.value)
