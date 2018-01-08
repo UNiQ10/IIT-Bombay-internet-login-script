@@ -104,9 +104,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='''
                                         Tool to login and logout of IIT Bombay
                                         internet access page.''')
-    parser.add_argument('--logout', action='store_true', help='''
+    options_group = parser.add_mutually_exclusive_group()
+    options_group.add_argument('--logout', action='store_true', help='''
                             logout of IIT Bombay internet access page''')
-    parser.add_argument('--user', help='''
+    options_group.add_argument('--user', help='''
                             username used to login to IIT Bombay internet
                             access page''')
     args = parser.parse_args()
