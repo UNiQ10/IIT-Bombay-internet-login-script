@@ -107,16 +107,16 @@ if __name__ == '__main__':
     options_group = parser.add_mutually_exclusive_group()
     options_group.add_argument('--logout', action='store_true', help='''
                             logout of IIT Bombay internet access page''')
-    options_group.add_argument('--user', help='''
-                            username used to login to IIT Bombay internet
-                            access page''')
+    options_group.add_argument('--login', metavar='USERNAME', help='''
+                            login to IIT Bombay internet access page as
+                            USERNAME''')
     args = parser.parse_args()
 
     exit_code = ExitCode.BAD_INVOCATION.value
     if args.logout:
         exit_code = do_logout()
-    elif args.user is not None:
-        exit_code = do_login(args.user)
+    elif args.login is not None:
+        exit_code = do_login(args.login)
     else:
         parser.print_help()
     sys.exit(exit_code)
