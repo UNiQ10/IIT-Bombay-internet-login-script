@@ -7,4 +7,4 @@ Made for ease of internet use in headless servers.
 ### Requirements:
 * Python3
 
-**Note:** A copy of this script is made available at https://www.cse.iitb.ac.in/~sandeeps94/scripts/internet-login.py
+**Note:** A copy of this script is made available at https://www.cse.iitb.ac.in/~sandeeps94/scripts/iitb-internet.py
