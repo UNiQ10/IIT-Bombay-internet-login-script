@@ -72,7 +72,7 @@ def get_response_text(response):
                 % (response.geturl())) from e
 
 def is_banned(page_contents):
-    return ("window.location.href='https://internet.iitb.ac.in/banned.php'"
+    return ("window.location.href='https://internet.iitb.ac.in/baned.php'"
             in page_contents)
 
 def is_bad_password(page_contents):
